@@ -55,8 +55,8 @@ public class IntrinsicValueAnalyzer {
 
     private static void computeIntrinsicValue(List<Stock> stocks) {
         for (Stock stock : stocks) {
-            Double latesEps = stock.getHistories().get(0).getEps();
-            stock.setIntrinsicValue(latesEps * (8.5 + 2 * stock.getAvgGrowthRate()));
+            Double latestEps = stock.getHistories().get(0).getEps();
+            stock.setIntrinsicValue(latestEps * (8.5 + 2 * stock.getAvgGrowthRate()));
         }
     }
 
