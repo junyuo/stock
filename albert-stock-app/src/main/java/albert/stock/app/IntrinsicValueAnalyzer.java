@@ -97,8 +97,8 @@ public class IntrinsicValueAnalyzer {
             for (int i = 0; i < histories.size(); i++) {
                 if (i < histories.size() - 1) {
                     History current = histories.get(i);
-                    History last = histories.get(i + 1);
-                    Double growth = current.getEps() - last.getEps();
+                    History previous = histories.get(i + 1);
+                    Double growth = current.getEps() - previous.getEps();
                     current.setGrowth(growth);
                     result.add(current);
                 } else {
