@@ -104,21 +104,8 @@ public class IntrinsicValueAnalyzer {
                 } else {
                     result.add(histories.get(i));
                 }
-
             }
             stock.setHistories(result);
-        }
-    }
-
-    private static void printData(List<Stock> stocks) {
-        for (Stock stock : stocks) {
-            log.debug("symbol = " + stock.getSymbol() + ", name = " + stock.getName() + ", intrinsic value = "
-                    + stock.getIntrinsicValue());
-            List<History> histories = stock.getHistories();
-            for (History history : histories) {
-                log.debug(history.toString());
-            }
-            log.debug("-------------------------------------------------------------------------");
         }
     }
 
