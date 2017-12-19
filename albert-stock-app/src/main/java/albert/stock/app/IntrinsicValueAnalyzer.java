@@ -25,7 +25,7 @@ public class IntrinsicValueAnalyzer {
     private static DecimalFormat numberFormat = new DecimalFormat("0.00");
     private static File summaryFile = new File(dir + "\\summary.csv");
 
-    public static void main(String[] args) throws IOException {
+    public void execute() throws IOException {
         List<Stock> stocks = readCSV();
         computeGrowth(stocks);
         computeGrowthRate(stocks);
@@ -37,7 +37,7 @@ public class IntrinsicValueAnalyzer {
         log.info("Please check " + dir + "\\summary.csv");
     }
 
-    private static void writeAnalysisResult(List<Stock> stocks) throws IOException {
+    private void writeAnalysisResult(List<Stock> stocks) throws IOException {
         byte bom[] = { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
         String header = new String(bom) + "symbol,name,intrinsic value";
         List<String> csvString = new ArrayList<>();
@@ -53,14 +53,14 @@ public class IntrinsicValueAnalyzer {
         charsink.writeLines(csvString);
     }
 
-    private static void computeIntrinsicValue(List<Stock> stocks) {
+    private void computeIntrinsicValue(List<Stock> stocks) {
         for (Stock stock : stocks) {
             Double latestEps = stock.getHistories().get(0).getEps();
             stock.setIntrinsicValue(latestEps * (8.5 + 2 * stock.getAvgGrowthRate()));
         }
     }
 
-    private static void compuateAvgGrowthRate(List<Stock> stocks) {
+    private void compuateAvgGrowthRate(List<Stock> stocks) {
         for (Stock stock : stocks) {
             List<History> histories = stock.getHistories();
             Double sum = 0d;
@@ -71,7 +71,7 @@ public class IntrinsicValueAnalyzer {
         }
     }
 
-    private static void computeGrowthRate(List<Stock> stocks) {
+    private void computeGrowthRate(List<Stock> stocks) {
         for (Stock stock : stocks) {
             List<History> histories = stock.getHistories();
             List<History> result = new ArrayList<>();
@@ -90,7 +90,7 @@ public class IntrinsicValueAnalyzer {
         }
     }
 
-    private static void computeGrowth(List<Stock> stocks) {
+    private void computeGrowth(List<Stock> stocks) {
         for (Stock stock : stocks) {
             List<History> histories = stock.getHistories();
             List<History> result = new ArrayList<>();
@@ -109,7 +109,7 @@ public class IntrinsicValueAnalyzer {
         }
     }
 
-    private static List<Stock> readCSV() throws IOException {
+    private List<Stock> readCSV() throws IOException {
         List<Stock> stocks = new ArrayList<>();
 
         Collection<File> files = FileUtils.listFiles(new File(dir), new String[] { "csv" }, false);
