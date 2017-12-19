@@ -33,7 +33,7 @@ public class EpsDataCollector {
         }
 
         for (EpsHistory history : historyData) {
-            CharSink charsink = Files.asCharSink(new File(dir + history.getSymbo() + ".csv"), Charsets.UTF_8);
+            CharSink charsink = Files.asCharSink(new File(dir + history.getSymbol() + ".csv"), Charsets.UTF_8);
             List<String> lines = new ArrayList<>();
             lines.add("year,eps");
             for (EPS eps : history.getHistories()) {
@@ -45,7 +45,7 @@ public class EpsDataCollector {
     }
 
     private void collectData(List<EpsHistory> historyData, String symbol) throws IOException {
-        EpsHistory history = EpsHistory.builder().symbo(symbol).build();
+        EpsHistory history = EpsHistory.builder().symbol(symbol).build();
         List<EPS> epsData = new ArrayList<>();
 
         String url = "https://goodinfo.tw/StockInfo/StockDetail.asp?STOCK_ID=" + symbol;
@@ -53,7 +53,7 @@ public class EpsDataCollector {
         String name = doc.select(
                 "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(1) > td > span:nth-child(1) > a")
                 .text();
-        history.setSymbo(CharMatcher.anyOf(" ").replaceFrom(name, "-"));
+        history.setSymbol(CharMatcher.anyOf(" ").replaceFrom(name, "-"));
 
         Element financeIncomElement = doc.getElementById("FINANCE_INCOME");
         if (financeIncomElement != null) {
@@ -83,7 +83,7 @@ public class EpsDataCollector {
     @Data
     @Builder
     private static class EpsHistory {
-        private String symbo;
+        private String symbol;
         private List<EPS> histories;
     }
 
