@@ -14,6 +14,7 @@ import org.jsoup.select.Elements;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 
@@ -41,7 +42,11 @@ public class EpsDataCollector {
             }
             charsink.writeLines(lines);
         }
-        log.debug("collector data successfully, symbol list = " + symbols.toString());
+        if (historyData.size() > 0) {
+            List<String> successList = new ArrayList<>();
+            historyData.forEach(data -> successList.add(data.getSymbol()));
+            log.debug("collector data successfully, symbol list = " + Joiner.on(", ").join(successList));
+        }
     }
 
     private void collectData(List<EpsHistory> historyData, String symbol) throws IOException {
