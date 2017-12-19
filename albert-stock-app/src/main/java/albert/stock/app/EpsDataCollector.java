@@ -3,9 +3,14 @@ package albert.stock.app;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -33,6 +38,23 @@ public class EpsDataCollector {
             collectData(historyData, symbol);
         }
 
+        if (historyData.size() > 0) {
+            List<String> successList = new ArrayList<>();
+            historyData.forEach(data -> successList.add(data.getSymbol()));
+            log.debug("collector data successfully, symbol list = " + Joiner.on(", ").join(successList));
+
+            Calendar cal = Calendar.getInstance();
+            Date current = cal.getTime();
+            String dateString = new SimpleDateFormat("yyyyMMddHHmmssSSS").format(current);
+            File backupDir = new File(dir + dateString);
+            backupDir.mkdir();
+            
+            Collection<File> existingFiles = FileUtils.listFiles(new File(dir), new String[] { "csv" }, false);
+            for (File file : existingFiles) {
+                FileUtils.copyFileToDirectory(file, backupDir);
+            }
+        }
+
         for (EpsHistory history : historyData) {
             CharSink charsink = Files.asCharSink(new File(dir + history.getSymbol() + ".csv"), Charsets.UTF_8);
             List<String> lines = new ArrayList<>();
@@ -42,11 +64,7 @@ public class EpsDataCollector {
             }
             charsink.writeLines(lines);
         }
-        if (historyData.size() > 0) {
-            List<String> successList = new ArrayList<>();
-            historyData.forEach(data -> successList.add(data.getSymbol()));
-            log.debug("collector data successfully, symbol list = " + Joiner.on(", ").join(successList));
-        }
+
     }
 
     private void collectData(List<EpsHistory> historyData, String symbol) throws IOException {
