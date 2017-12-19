@@ -23,7 +23,7 @@ public class IntrinsicValueAnalyzer {
 
     private static String dir = "tmp";
     private static DecimalFormat numberFormat = new DecimalFormat("0.00");
-    private static File summaryFile = new File(dir + "\\summary.csv");
+    private static File summaryFile = new File(dir + File.separator + "summary.csv");
 
     public void execute() throws IOException {
         List<Stock> stocks = readCSV();
@@ -34,7 +34,7 @@ public class IntrinsicValueAnalyzer {
         writeAnalysisResult(stocks);
 
         log.info("analyze successful!");
-        log.info("Please check " + dir + "\\summary.csv");
+        log.info("Please check " + dir + File.separator + "summary.csv");
     }
 
     private void writeAnalysisResult(List<Stock> stocks) throws IOException {
@@ -120,7 +120,7 @@ public class IntrinsicValueAnalyzer {
                 Stock stock = Stock.builder().symbol(fileNameArr[0]).name(fileNameArr[1]).build();
                 List<History> histories = new ArrayList<>();
 
-                List<String> lines = FileUtils.readLines(new File(dir + "\\" + fileName));
+                List<String> lines = FileUtils.readLines(new File(dir + File.separator + fileName));
                 for (int i = 0; i < lines.size(); i++) {
                     if (i > 0) {
                         String[] lineArr = lines.get(i).split(",");

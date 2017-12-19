@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EpsDataCollector {
-    private static String dir = "tmp\\";
+    private static String dir = "tmp" + File.separator;
 
     public void execute() throws IOException {
         List<String> symbols = readSymbols();
