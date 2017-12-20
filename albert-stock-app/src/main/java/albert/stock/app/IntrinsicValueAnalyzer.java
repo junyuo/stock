@@ -32,7 +32,7 @@ public class IntrinsicValueAnalyzer {
 
     public void execute(List<EpsHistory> data) throws IOException {
         log.info("Analyzing data...");
-        List<Stock> stocks = readCSV(data);
+        List<Stock> stocks = prepareAnalysisData(data);
         computeGrowth(stocks);
         computeGrowthRate(stocks);
         compuateAvgGrowthRate(stocks);
@@ -165,7 +165,7 @@ public class IntrinsicValueAnalyzer {
         }
     }
 
-    private List<Stock> readCSV(List<EpsHistory> data) throws IOException {
+    private List<Stock> prepareAnalysisData(List<EpsHistory> data) throws IOException {
         List<Stock> stocks = new ArrayList<>();
 
         for (EpsHistory row : data) {
