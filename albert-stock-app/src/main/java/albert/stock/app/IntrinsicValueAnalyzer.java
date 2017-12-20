@@ -89,6 +89,10 @@ public class IntrinsicValueAnalyzer {
         cell = headerRow.createCell(3);
         cell.setCellValue("股價");
         cell.setCellStyle(style);
+        
+        cell = headerRow.createCell(4);
+        cell.setCellValue("股利");
+        cell.setCellStyle(style);
     }
 
     private void writeDataForEachRow(Stock stock, Row row, CellStyle style) {
@@ -106,6 +110,10 @@ public class IntrinsicValueAnalyzer {
 
         cell = row.createCell(3);
         cell.setCellValue(stock.getCurrentPrice());
+        cell.setCellStyle(style);
+        
+        cell = row.createCell(4);
+        cell.setCellValue(stock.getDividen());
         cell.setCellStyle(style);
     }
 
@@ -171,7 +179,7 @@ public class IntrinsicValueAnalyzer {
         for (EpsHistory row : data) {
             String symbolArr[] = row.getSymbol().split("-");
             Stock stock = Stock.builder().symbol(symbolArr[0]).name(symbolArr[1]).currentPrice(row.getCurrentPrice())
-                    .build();
+                    .dividen(row.getDividen()).build();
 
             List<History> histories = new ArrayList<>();
             for (EPS eps : row.getHistories()) {
@@ -194,6 +202,7 @@ public class IntrinsicValueAnalyzer {
         private Double currentPrice;
         private Double avgGrowthRate;
         private Double intrinsicValue;
+        private Double dividen;
         private List<History> histories;
     }
 
