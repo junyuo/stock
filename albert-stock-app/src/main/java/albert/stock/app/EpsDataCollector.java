@@ -1,16 +1,10 @@
 package albert.stock.app;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,10 +12,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.io.CharSink;
-import com.google.common.io.Files;
 
 import lombok.Builder;
 import lombok.Data;
@@ -29,42 +19,19 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EpsDataCollector {
-    private static String dir = "tmp" + File.separator;
-
-    public void execute() throws IOException {
+    
+    public List<EpsHistory> execute() throws IOException {
+        log.info("fetching EPS data...");
         List<String> symbols = readSymbols();
         List<EpsHistory> historyData = new ArrayList<>();
         for (String symbol : symbols) {
             collectData(historyData, symbol);
         }
-
-        if (historyData.size() > 0) {
-            List<String> successList = new ArrayList<>();
-            historyData.forEach(data -> successList.add(data.getSymbol()));
-            log.debug("collector data successfully, symbol list = " + Joiner.on(", ").join(successList));
-
-            Calendar cal = Calendar.getInstance();
-            Date current = cal.getTime();
-            String dateString = new SimpleDateFormat("yyyyMMddHHmmssSSS").format(current);
-            File backupDir = new File(dir + dateString);
-            backupDir.mkdir();
-            
-            Collection<File> existingFiles = FileUtils.listFiles(new File(dir), new String[] { "csv" }, false);
-            for (File file : existingFiles) {
-                FileUtils.copyFileToDirectory(file, backupDir);
-            }
-        }
-
         for (EpsHistory history : historyData) {
-            CharSink charsink = Files.asCharSink(new File(dir + history.getSymbol() + ".csv"), Charsets.UTF_8);
-            List<String> lines = new ArrayList<>();
-            lines.add("year,eps");
-            for (EPS eps : history.getHistories()) {
-                lines.add(eps.getYear() + "," + eps.getValue());
-            }
-            charsink.writeLines(lines);
+            log.debug(history.toString());
         }
-
+        log.info("fetched EPS data...");
+        return historyData;
     }
 
     private void collectData(List<EpsHistory> historyData, String symbol) throws IOException {
@@ -73,10 +40,16 @@ public class EpsDataCollector {
 
         String url = "https://goodinfo.tw/StockInfo/StockDetail.asp?STOCK_ID=" + symbol;
         Document doc = Jsoup.connect(url).get();
+
         String name = doc.select(
                 "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(1) > td > span:nth-child(1) > a")
                 .text();
         history.setSymbol(CharMatcher.anyOf(" ").replaceFrom(name, "-"));
+
+        String currentPirce = doc.select(
+                "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(3) > td:nth-child(1)")
+                .text();
+        history.setCurrentPrice(Double.valueOf(currentPirce));
 
         Element financeIncomElement = doc.getElementById("FINANCE_INCOME");
         if (financeIncomElement != null) {
@@ -105,14 +78,15 @@ public class EpsDataCollector {
 
     @Data
     @Builder
-    private static class EpsHistory {
+    public static class EpsHistory {
         private String symbol;
+        private Double currentPrice;
         private List<EPS> histories;
     }
 
     @Data
     @Builder
-    private static class EPS {
+    public static class EPS {
         private String year;
         private String value;
     }

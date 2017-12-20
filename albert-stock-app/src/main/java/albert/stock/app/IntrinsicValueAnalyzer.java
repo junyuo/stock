@@ -1,19 +1,24 @@
 package albert.stock.app;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharSink;
-import com.google.common.io.Files;
-
+import albert.stock.app.EpsDataCollector.EPS;
+import albert.stock.app.EpsDataCollector.EpsHistory;
 import lombok.Builder;
+import lombok.Cleanup;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +28,11 @@ public class IntrinsicValueAnalyzer {
 
     private static String dir = "tmp";
     private static DecimalFormat numberFormat = new DecimalFormat("0.00");
-    private static File summaryFile = new File(dir + File.separator + "summary.csv");
+    private static File summaryXlsFile = new File(dir + File.separator + "summary.xls");
 
-    public void execute() throws IOException {
-        List<Stock> stocks = readCSV();
+    public void execute(List<EpsHistory> data) throws IOException {
+        log.info("Analyzing data...");
+        List<Stock> stocks = readCSV(data);
         computeGrowth(stocks);
         computeGrowthRate(stocks);
         compuateAvgGrowthRate(stocks);
@@ -34,23 +40,73 @@ public class IntrinsicValueAnalyzer {
         writeAnalysisResult(stocks);
 
         log.info("analyze successful!");
-        log.info("Please check " + dir + File.separator + "summary.csv");
+        log.info("Please check " + dir + File.separator + "summary.xls");
     }
 
     private void writeAnalysisResult(List<Stock> stocks) throws IOException {
-        byte bom[] = { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
-        String header = new String(bom) + "symbol,name,intrinsic value";
-        List<String> csvString = new ArrayList<>();
-        csvString.add(header);
+        @Cleanup
+        Workbook workbook = new HSSFWorkbook();
+        Sheet sheet = workbook.createSheet("stock list");
+        CellStyle style = createCellStyle(workbook);
+
+        int rowCount = 0;
+        Row headerRow = sheet.createRow(rowCount);
+        writeHeader(headerRow, style);
         for (Stock stock : stocks) {
-            String symbol = stock.getSymbol();
-            String name = stock.getName();
-            String intrinsicValue = numberFormat.format(stock.getIntrinsicValue());
-            String row = symbol + "," + name + "," + intrinsicValue;
-            csvString.add(row);
+            Row row = sheet.createRow(++rowCount);
+            writeDataForEachRow(stock, row, style);
         }
-        CharSink charsink = Files.asCharSink(summaryFile, Charsets.UTF_8);
-        charsink.writeLines(csvString);
+
+        @Cleanup
+        FileOutputStream outputStream = new FileOutputStream(summaryXlsFile);
+        workbook.write(outputStream);
+    }
+
+    private CellStyle createCellStyle(Workbook workbook) {
+        CellStyle cellStyle = workbook.createCellStyle();
+        cellStyle.setBorderBottom(BorderStyle.THIN);
+        cellStyle.setBorderTop(BorderStyle.THIN);
+        cellStyle.setBorderLeft(BorderStyle.THIN);
+        cellStyle.setBorderRight(BorderStyle.THIN);
+        cellStyle.setWrapText(true);
+
+        return cellStyle;
+    }
+
+    private void writeHeader(Row headerRow, CellStyle style) {
+        Cell cell = headerRow.createCell(0);
+        cell.setCellValue("股票代號");
+        cell.setCellStyle(style);
+
+        cell = headerRow.createCell(1);
+        cell.setCellValue("名稱");
+        cell.setCellStyle(style);
+
+        cell = headerRow.createCell(2);
+        cell.setCellValue("真實價值");
+        cell.setCellStyle(style);
+
+        cell = headerRow.createCell(3);
+        cell.setCellValue("股價");
+        cell.setCellStyle(style);
+    }
+
+    private void writeDataForEachRow(Stock stock, Row row, CellStyle style) {
+        Cell cell = row.createCell(0);
+        cell.setCellValue(stock.getSymbol());
+        cell.setCellStyle(style);
+
+        cell = row.createCell(1);
+        cell.setCellValue(stock.getName());
+        cell.setCellStyle(style);
+
+        cell = row.createCell(2);
+        cell.setCellValue(Double.valueOf(numberFormat.format(stock.getIntrinsicValue())));
+        cell.setCellStyle(style);
+
+        cell = row.createCell(3);
+        cell.setCellValue(stock.getCurrentPrice());
+        cell.setCellStyle(style);
     }
 
     private void computeIntrinsicValue(List<Stock> stocks) {
@@ -109,31 +165,23 @@ public class IntrinsicValueAnalyzer {
         }
     }
 
-    private List<Stock> readCSV() throws IOException {
+    private List<Stock> readCSV(List<EpsHistory> data) throws IOException {
         List<Stock> stocks = new ArrayList<>();
 
-        Collection<File> files = FileUtils.listFiles(new File(dir), new String[] { "csv" }, false);
-        for (File file : files) {
-            String fileName = file.getName();
-            if (fileName.contains("-")) {
-                String fileNameArr[] = fileName.substring(0, fileName.lastIndexOf(".")).split("-");
-                Stock stock = Stock.builder().symbol(fileNameArr[0]).name(fileNameArr[1]).build();
-                List<History> histories = new ArrayList<>();
+        for (EpsHistory row : data) {
+            String symbolArr[] = row.getSymbol().split("-");
+            Stock stock = Stock.builder().symbol(symbolArr[0]).name(symbolArr[1]).currentPrice(row.getCurrentPrice())
+                    .build();
 
-                List<String> lines = FileUtils.readLines(new File(dir + File.separator + fileName));
-                for (int i = 0; i < lines.size(); i++) {
-                    if (i > 0) {
-                        String[] lineArr = lines.get(i).split(",");
-                        String year = lineArr[0];
-                        Double eps = Double.parseDouble(lineArr[1]);
-                        History history = History.builder().year(year).eps(eps).build();
-                        histories.add(history);
-                    }
-                }
-                stock.setHistories(histories);
-                stocks.add(stock);
+            List<History> histories = new ArrayList<>();
+            for (EPS eps : row.getHistories()) {
+                History history = History.builder().year(eps.getYear()).eps(Double.valueOf(eps.getValue())).build();
+                histories.add(history);
             }
+            stock.setHistories(histories);
+            stocks.add(stock);
         }
+
         return stocks;
     }
 
@@ -143,6 +191,7 @@ public class IntrinsicValueAnalyzer {
     private static class Stock {
         private String symbol;
         private String name;
+        private Double currentPrice;
         private Double avgGrowthRate;
         private Double intrinsicValue;
         private List<History> histories;
