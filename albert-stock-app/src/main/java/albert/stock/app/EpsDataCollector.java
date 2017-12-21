@@ -27,7 +27,6 @@ public class EpsDataCollector {
     public List<EpsHistory> execute() {
         log.info("fetching data...");
         List<Security> securities = readSecurities();
-        log.info(securities.toString());
         List<EpsHistory> historyData = new ArrayList<>();
         for (Security security : securities) {
             collectData(historyData, security);
@@ -69,7 +68,8 @@ public class EpsDataCollector {
 
                 historyData.add(history);
             } else {
-                log.error(new MessageFormat("您指定的股票代號 {0} 不存在 ").format(new String[] { security.getSymbol() }));
+                String errorMs = "資料取得發生錯誤，或您指定的股票代號 {0} 不存在 ";
+                log.error(new MessageFormat(errorMs).format(new String[] { security.getSymbol() }));
             }
         } catch (IOException e) {
             throw new RuntimeException("無法取得資料, 錯誤原因: " + e.getMessage(), e);
