@@ -11,7 +11,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Strings;
 
 import lombok.Builder;
@@ -21,12 +20,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EpsDataCollector {
 
+    public static void main(String[] args) {
+        new EpsDataCollector().execute();
+    }
+
     public List<EpsHistory> execute() {
         log.info("fetching data...");
-        List<String> symbols = readSymbols();
+        List<Security> securities = readSecurities();
+        log.info(securities.toString());
         List<EpsHistory> historyData = new ArrayList<>();
-        for (String symbol : symbols) {
-            collectData(historyData, symbol);
+        for (Security security : securities) {
+            collectData(historyData, security);
         }
         for (EpsHistory history : historyData) {
             log.debug(history.toString());
@@ -35,24 +39,20 @@ public class EpsDataCollector {
         return historyData;
     }
 
-    private void collectData(List<EpsHistory> historyData, String symbol) {
-        EpsHistory history = EpsHistory.builder().symbol(symbol).build();
+    private void collectData(List<EpsHistory> historyData, Security security) {
+        EpsHistory history = EpsHistory.builder().symbol(security.getSymbol() + "-" + security.getName()).build();
         List<EPS> epsData = new ArrayList<>();
 
-        String basicInfoUrl = "https://goodinfo.tw/StockInfo/StockDetail.asp?STOCK_ID=" + symbol;
+        String basicInfoUrl = "https://goodinfo.tw/StockInfo/StockDetail.asp?STOCK_ID=" + security.getSymbol();
         try {
             Document basicInfo = Jsoup.connect(basicInfoUrl).get();
-            String name = basicInfo.select(
-                    "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(1) > td > span:nth-child(1) > a")
-                    .text();
-            history.setSymbol(CharMatcher.anyOf(" ").replaceFrom(name, "-"));
 
             String currentPirce = basicInfo.select(
                     "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(3) > td:nth-child(1)")
                     .text();
             history.setCurrentPrice((Strings.isNullOrEmpty(currentPirce)) ? 0d : Double.valueOf(currentPirce));
 
-            history.setCurrentPrice(getDividen(symbol));
+            history.setDividen(getDividen(security.getSymbol()));
 
             Element financeIncomElement = basicInfo.getElementById("FINANCE_INCOME");
             if (financeIncomElement != null) {
@@ -69,7 +69,7 @@ public class EpsDataCollector {
 
                 historyData.add(history);
             } else {
-                log.error(new MessageFormat("您指定的股票代號 {0} 不存在 ").format(new String[] { symbol }));
+                log.error(new MessageFormat("您指定的股票代號 {0} 不存在 ").format(new String[] { security.getSymbol() }));
             }
         } catch (IOException e) {
             throw new RuntimeException("無法取得資料, 錯誤原因: " + e.getMessage(), e);
@@ -94,15 +94,29 @@ public class EpsDataCollector {
         }
     }
 
-    private List<String> readSymbols() {
+    private List<Security> readSecurities() {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        List<String> symbols = new ArrayList<>();
+        List<Security> securities = new ArrayList<>();
         try {
-            symbols = IOUtils.readLines(classLoader.getResourceAsStream("symbols.txt"));
+            List<String> data = IOUtils.readLines(classLoader.getResourceAsStream("symbols.txt"));
+            if (data != null && data.size() > 0) {
+                for (String item : data) {
+                    String itemArr[] = item.split(",");
+                    Security security = Security.builder().symbol(itemArr[0]).name(itemArr[1]).build();
+                    securities.add(security);
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException("找不到 symbols.txt", e);
         }
-        return symbols;
+        return securities;
+    }
+
+    @Data
+    @Builder
+    public static class Security {
+        private String symbol;
+        private String name;
     }
 
     @Data
