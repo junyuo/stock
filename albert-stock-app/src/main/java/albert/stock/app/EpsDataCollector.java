@@ -87,7 +87,7 @@ public class EpsDataCollector {
             throw new RuntimeException("無法取得資料, 錯誤原因: " + e.getMessage(), e);
         }
 
-        if (Strings.isNullOrEmpty(dividen)) {
+        if (Strings.isNullOrEmpty(dividen) || "-".equals(dividen)) {
             return 0d;
         } else {
             return Double.valueOf(dividen);
