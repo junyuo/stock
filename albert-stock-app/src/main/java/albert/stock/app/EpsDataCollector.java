@@ -47,7 +47,7 @@ public class EpsDataCollector {
             Document basicInfo = Jsoup.connect(basicInfoUrl).get();
 
             String currentPirce = basicInfo.select(
-                    "body > table:nth-child(3) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table:nth-child(1) > tbody > tr > td > table > tbody > tr:nth-child(3) > td:nth-child(1)")
+                    "body > table:nth-child(5) > tbody > tr > td:nth-child(3) > table > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(1) > td:nth-child(1) > table > tbody > tr:nth-child(3) > td:nth-child(1)")
                     .text();
             history.setCurrentPrice((Strings.isNullOrEmpty(currentPirce)) ? 0d : Double.valueOf(currentPirce));
 
